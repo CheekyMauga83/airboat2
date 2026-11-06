@@ -1,0 +1,8 @@
+.DS_Store
+build/
+.pio/
+*.bin
+*.elf
+*.map
+__pycache__/
+*.pyc
