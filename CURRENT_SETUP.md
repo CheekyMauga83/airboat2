@@ -1,5 +1,54 @@
 # Current setup — 2026-11-16
 
+> ## UPDATE — 2026-11-16, 17:50 EST (evening session, Felipe + Claude Code)
+>
+> **This block is newer than everything below it.** Where they disagree, this wins.
+>
+> **What is on the boards right now (flashed and hash-verified 2026-11-16):**
+>
+> | Board | Sketch now running | Notes |
+> | --- | --- | --- |
+> | Boat `44:1B:F6:FE:71:A8` | `firmware/boat_l298_joystick_telemetry` | `boat_l298_joystick` + radio telemetry. **Cap lowered to 25%** (`kMaxDuty = 64`) at the owner's request. |
+> | Controller `E0:72:A1:D5:25:90` | `firmware/controller_link_telemetry` | `controller_link_test` + prints relayed `TURB` lines. Joystick TX unchanged. |
+>
+> **New on 2026-11-16 (all new files; no existing file's code was changed):**
+>
+> - `firmware/boat_l298_joystick_telemetry/` — copy of `boat_l298_joystick` with 54
+>   added lines: every 500 ms turbidity average is also sent to the controller by
+>   ESP-NOW (16-byte packet, magic `0x41495254`), with applied left/right duty and
+>   armed flag. Only changed line: `kMaxDuty` 128 -> 64. Arming, 3 s run limit,
+>   150 ms link timeout and forward-only logic are untouched.
+> - `firmware/controller_link_telemetry/` — copy of `controller_link_test` that also
+>   receives those packets and prints `TURB adc=<raw> mv=<GPIO4 mV> n=<seq>`.
+> - `tools/poseidon_web.py` + `tools/poseidon_web.html` — read-only browser
+>   dashboard. `python3 tools/poseidon_web.py` then open http://127.0.0.1:8765
+>   (`--demo` for simulated data). Finds boards by USB serial; never writes serial.
+> - `tools/poseidon.py` — same thing as a curses terminal dashboard.
+>
+> **Verified on hardware on 2026-11-16:**
+>
+> - Motors ran from the joystick on `boat_l298_joystick` (50%) and again on
+>   `boat_l298_joystick_telemetry` at 50%, boat on battery (owner's observation).
+> - Turbidity arrived over the radio and showed in the web dashboard with only the
+>   controller on USB: sensor ~2.90 V (raw ~2297, GPIO4 ~1.937 V), steady.
+>
+> **NOT verified / known gaps as of 2026-11-16:**
+>
+> - Motors have not been run since the cap was lowered to 25%.
+> - In one 5 s sample ~24% of joystick packets failed MAC ACK (76 ok / 24 failed)
+>   with the motor sketch running; cause unknown. Watch for unexpected disarms.
+> - The dashboard's fan bars are estimates from the joystick (forward-only mix,
+>   full range); they ignore the 25% cap. The boat sends real applied duty in the
+>   telemetry packet, but the controller sketch does not print it yet.
+> - With only the controller on USB the dashboard shows Radio "unknown" even when
+>   the link is up (it only learns LINK state from boat USB lines).
+> - NTU is still uncalibrated. No drinking-water or quantitative claims.
+> - Toolchain used: arduino-cli 1.6.0, esp32:esp32 3.3.11,
+>   FQBN `esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,USBMode=hwcdc,CDCOnBoot=cdc,UploadMode=default`.
+>
+> To go back to the earlier state, flash `boat_l298_joystick` (boat) and
+> `controller_link_test` (controller); both are unchanged in this repository.
+
 Repository: https://github.com/CheekyMauga83/airboat2
 
 ## Resume on another computer
