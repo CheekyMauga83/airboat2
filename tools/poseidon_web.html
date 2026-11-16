@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poseidon</title>
+<style>
+  :root {
+    --bg: #06131c; --surface: #0c2130; --surface-2: #11293a; --line: #1d3b4f;
+    --ink: #e8f4f8; --ink-2: #9fbccb; --ink-3: #6b8a9a;
+    --accent: #3ad6c5; --accent-2: #5aa9ff;
+    --good: #4ade80; --warn: #fbbf24; --bad: #f87171;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(1200px 700px at 20% -10%, #0e2c40 0%, var(--bg) 60%);
+         color: var(--ink); font: 15px/1.45 -apple-system, "Inter", "Segoe UI", sans-serif; min-height: 100vh; }
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 24px 6px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; }
+  .brand h1 { margin: 0; font-size: 22px; letter-spacing: .32em; font-weight: 700; }
+  .brand small { display: block; color: var(--ink-2); letter-spacing: .04em; font-size: 12px; margin-top: 2px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+          background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+  .pill b { color: var(--ink); font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-3); flex: none; }
+  .good .dot { background: var(--good); box-shadow: 0 0 10px var(--good); }
+  .warn .dot { background: var(--warn); } .bad .dot { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+  #demoBanner { display: none; margin: 8px 24px 0; padding: 8px 14px; border-radius: 10px; font-weight: 600;
+                background: #3a2c08; border: 1px solid #7a5c10; color: var(--warn); font-size: 13px; }
+  main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; padding: 16px 24px 28px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px 24px; } header { padding: 14px 16px 4px; } }
+  .col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-content: start; }
+  .card { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line);
+          border-radius: 16px; padding: 16px 18px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2);
+             display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+  .tag { font-size: 11px; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+         color: var(--ink-3); text-transform: none; font-weight: 500; }
+  .tag.warn { color: var(--warn); border-color: #7a5c10; }
+  #sea { width: 100%; height: 380px; display: block; border-radius: 12px; }
+  .motors { display: grid; gap: 8px; margin-top: 14px; }
+  .mrow { display: grid; grid-template-columns: 70px 1fr 128px; gap: 12px; align-items: center; font-size: 13px; color: var(--ink-2); }
+  .bar { position: relative; height: 10px; background: #0a1a26; border-radius: 6px; overflow: hidden; }
+  .bar i { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 4px; }
+  .mval { font-family: var(--mono); color: var(--ink); text-align: right; }
+  .note { color: var(--ink-3); font-size: 12px; margin-top: 10px; }
+  .hero { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .hero .num { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .hero .unit { color: var(--ink-2); font-size: 15px; }
+  .kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .kv div { background: #0a1a26; border-radius: 10px; padding: 8px 10px; }
+  .kv span { display: block; font-size: 11px; color: var(--ink-3); letter-spacing: .06em; text-transform: uppercase; }
+  .kv b { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+  #chartWrap { position: relative; margin-top: 12px; }
+  #chart { width: 100%; height: 120px; display: block; }
+  #tip { position: absolute; display: none; pointer-events: none; background: #06131c; border: 1px solid var(--line);
+         border-radius: 8px; padding: 4px 8px; font-size: 12px; font-family: var(--mono); white-space: nowrap; }
+  .empty { color: var(--ink-2); font-size: 14px; padding: 6px 0; }
+  .twocol { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; }
+  #pad { width: 150px; height: 150px; display: block; }
+  .stat { font-family: var(--mono); font-size: 14px; display: grid; gap: 4px; }
+  .stat span { color: var(--ink-3); display: inline-block; width: 72px; font-family: -apple-system, sans-serif; font-size: 12px; }
+  #log { font-family: var(--mono); font-size: 12px; color: var(--ink-2); height: 150px; overflow: hidden;
+         display: flex; flex-direction: column; justify-content: flex-end; }
+  #log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #log em { font-style: normal; color: var(--accent-2); margin-right: 8px; } #log em.c { color: var(--accent); }
+  button { font: inherit; color: var(--ink); background: #123247; border: 1px solid #2a5670; border-radius: 10px;
+           padding: 9px 14px; cursor: pointer; }
+  button:hover:not(:disabled) { background: #17405a; } button:disabled { opacity: .45; cursor: not-allowed; }
+  .voice { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  #said { margin-top: 12px; background: #0a1a26; border-radius: 12px; padding: 10px 12px; color: var(--ink);
+          min-height: 44px; font-size: 14px; }
+  #said:empty::before { content: "Press “Speak status” and Poseidon reads out the live telemetry."; color: var(--ink-3); }
+  label.chk { color: var(--ink-2); font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="34" height="38" viewBox="0 0 34 38" fill="none" stroke="#3ad6c5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M17 3v32M5 6v8a12 12 0 0 0 24 0V6M5 6l-3 4M5 6l3 4M29 6l-3 4M29 6l3 4M17 3l-3 4M17 3l3 4M11 30h12"/>
+    </svg>
+    <div><h1>POSEIDON</h1><small>Airboat ground station · read-only</small></div>
+  </div>
+  <span class="pill" id="pCtl"><i class="dot"></i>Controller <b>--</b></span>
+  <span class="pill" id="pBoat"><i class="dot"></i>Boat <b>--</b></span>
+  <span class="pill" id="pLink"><i class="dot"></i>Radio <b>--</b></span>
+</header>
+<div id="demoBanner">SIMULATION MODE — every number on this page is made up. No hardware is being read.</div>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <h2>Live boat <span class="tag" id="srcTag">no input</span></h2>
+      <canvas id="sea"></canvas>
+      <div class="motors">
+        <div class="mrow"><span>Left fan</span><div class="bar"><i id="bL"></i></div><span class="mval" id="vL">--</span></div>
+        <div class="mrow"><span>Right fan</span><div class="bar"><i id="bR"></i></div><span class="mval" id="vR">--</span></div>
+      </div>
+      <div class="note" id="motorNote">Fan power is an estimate from the joystick position, not a measurement.</div>
+    </section>
+    <section class="card">
+      <h2>Voice <span class="tag">talk-back only</span></h2>
+      <div class="voice">
+        <button id="speak">🔊 Speak status</button>
+        <label class="chk"><input type="checkbox" id="auto"> Announce radio link changes</label>
+        <button disabled title="Needs command firmware and safety checks first">🎙 Voice control — not built yet</button>
+      </div>
+      <div id="said"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card">
+      <h2>Turbidity sensor <span class="tag" id="turbTag">SEN0189</span></h2>
+      <div id="turbLive" hidden>
+        <div class="hero"><span class="num" id="tV">--</span><span class="unit">V at sensor</span></div>
+        <div class="kv">
+          <div><span>Raw ADC</span><b id="tAdc">--</b></div>
+          <div><span>GPIO4</span><b id="tPin">--</b></div>
+          <div><span>NTU</span><b title="Needs calibration against reference samples">--</b></div>
+        </div>
+        <div id="chartWrap"><svg id="chart" role="img" aria-label="Sensor voltage, last 60 seconds"></svg><div id="tip"></div></div>
+        <div class="note"><span id="tVia"></span>Sensor voltage, last 60 s. Murkier water gives a lower voltage. NTU needs calibration.</div>
+      </div>
+      <div id="turbEmpty" class="empty">No turbidity data.</div>
+    </section>
+    <section class="card">
+      <h2>Joystick</h2>
+      <div class="twocol">
+        <canvas id="pad"></canvas>
+        <div class="stat">
+          <div><span>X</span><b id="jx">--</b></div>
+          <div><span>Y</span><b id="jy">--</b></div>
+          <div><span>Button</span><b id="jb">--</b></div>
+          <div><span>Source</span><b id="js">--</b></div>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Radio link</h2>
+      <div class="stat">
+        <div><span>Boat</span><b id="lState">--</b></div>
+        <div><span>Packets</span><b id="lSeq">--</b></div>
+        <div><span>Delivered</span><b id="lAck">--</b></div>
+        <div><span>Motors</span><b id="lMot">--</b></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Serial log</h2>
+      <div id="log"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let S = null, lastMsg = 0;
+const hist = [];            // {t, v} turbidity sensor volts
+let lastTurbN = -1, lastLink = null;
+const anim = { l: 0, r: 0, aL: 0, aR: 0, scroll: 0, t: performance.now() };
+
+function pill(el, text, cls) { el.className = 'pill ' + cls; el.querySelector('b').textContent = text; }
+function feedPill(el, f) {
+  const cls = f.status === 'LIVE' ? 'good' : f.status === 'ERROR' ? 'bad' : 'warn';
+  const text = { LIVE: 'live', 'NOT FOUND': 'not plugged in', WAITING: 'waiting', STALE: 'stale', ERROR: 'port error', OFF: 'off' }[f.status] || f.status;
+  pill(el, f.status === 'LIVE' ? (f.rate ? `live · ${f.rate} Hz` : 'live') : text, cls);
+}
+const pct = v => Math.round(v * 100) + '%';
+
+function update(s) {
+  S = s; lastMsg = performance.now();
+  $('demoBanner').style.display = s.demo ? 'block' : 'none';
+  feedPill($('pCtl'), s.ctl); feedPill($('pBoat'), s.boat);
+  const ls = s.link.state;
+  pill($('pLink'), ls === 'LINK OK' ? 'link OK' : ls === 'LINK LOST' ? 'link lost' : ls === 'WAITING' ? 'waiting for controller' : 'unknown',
+       ls === 'LINK OK' ? 'good' : ls === 'LINK LOST' ? 'bad' : 'warn');
+
+  // Motors
+  const m = s.motors;
+  $('srcTag').textContent = m ? 'from ' + m.source : 'no joystick input';
+  for (const [k, bar, val] of [['left', 'bL', 'vL'], ['right', 'bR', 'vR']]) {
+    if (m) {
+      const v = m[k];
+      $(bar).style.left = '0'; $(bar).style.width = (v * 100) + '%';
+      $(val).textContent = `${pct(v)} · ${(v * s.railV).toFixed(1)} V est`;
+    } else { $(bar).style.width = '0'; $(val).textContent = '--'; }
+  }
+  $('motorNote').textContent = 'Fan power is an estimate from the joystick position, not a measurement. No reverse: pulling back stops the fans. ' +
+    (s.motorsDisabled ? 'The boat reports its motors are DISABLED.' : 'Boat motor state: unknown.') +
+    ` Volts assume a ${s.railV} V supply.`;
+
+  // Turbidity
+  const t = s.turb;
+  $('turbLive').hidden = !t; $('turbEmpty').hidden = !!t;
+  $('turbTag').textContent = s.demo ? 'SIMULATED' : 'SEN0189'; $('turbTag').className = 'tag' + (s.demo ? ' warn' : '');
+  if (t) {
+    $('tV').textContent = t.sensorV != null ? t.sensorV.toFixed(2) : '--';
+    $('tVia').textContent = t.via ? `Received via ${t.via}. ` : '';
+    $('tAdc').textContent = t.adc; $('tPin').textContent = t.mv != null ? (t.mv / 1000).toFixed(3) + ' V' : '--';
+    if (t.n !== lastTurbN && t.sensorV != null) { lastTurbN = t.n; hist.push({ t: Date.now(), v: t.sensorV }); }
+  } else {
+    $('turbEmpty').textContent = 'No turbidity data yet. It arrives over the radio through the controller once both boards run the telemetry sketches and the boat has power.';
+  }
+  const cutoff = Date.now() - 60000; while (hist.length && hist[0].t < cutoff) hist.shift();
+  drawChart();
+
+  // Joystick + link
+  const j = s.joystick;
+  $('jx').textContent = j ? j.x : '--'; $('jy').textContent = j ? j.y : '--';
+  $('jb').textContent = j ? j.button : '--'; $('jb').style.color = j && j.button === 'PRESSED' ? 'var(--warn)' : '';
+  $('js').textContent = j ? j.source : 'no fresh input';
+  const L = s.link;
+  $('lState').textContent = ls || 'no boat report'; $('lState').style.color = ls === 'LINK OK' ? 'var(--good)' : ls === 'LINK LOST' ? 'var(--bad)' : 'var(--warn)';
+  $('lSeq').textContent = `ctl ${L.ctlSeq ?? '--'} · boat ${L.boatSeq ?? '--'}`;
+  $('lAck').textContent = L.ack != null && L.fail != null && L.ack + L.fail ? `${(100 * L.ack / (L.ack + L.fail)).toFixed(1)}% (${L.fail} failed)` : '--';
+  $('lMot').textContent = s.motorsDisabled ? 'DISABLED (boat report)' : 'unknown';
+
+  $('log').innerHTML = s.log.slice(-9).map(l => `<div><em class="${l.src === 'CTL' ? 'c' : ''}">${l.src}</em>${l.text.replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;')}</div>`).join('');
+
+  if ($('auto').checked && ls && lastLink && ls !== lastLink) say(ls === 'LINK OK' ? 'Radio link restored.' : ls === 'LINK LOST' ? 'Warning. Radio link lost.' : 'Waiting for the controller.');
+  if (ls) lastLink = ls;
+}
+
+// ---- Turbidity trend (single series: 2px line, hover crosshair) ----
+function drawChart() {
+  const svg = $('chart'), W = svg.clientWidth || 400, H = 120, padL = 38, padR = 8, padT = 8, padB = 18;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  if (hist.length < 2) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" fill="#6b8a9a" font-size="12" text-anchor="middle">collecting readings…</text>`; return; }
+  let lo = Math.min(...hist.map(p => p.v)), hi = Math.max(...hist.map(p => p.v));
+  if (hi - lo < 0.1) { const mid = (hi + lo) / 2; lo = mid - 0.05; hi = mid + 0.05; }
+  const now = Date.now(), x = t => padL + (1 - (now - t) / 60000) * (W - padL - padR), y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+  const d = hist.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  svg._scale = { x, y, lo, hi, W, H, padT, padB };
+  svg.innerHTML =
+    `<line x1="${padL}" x2="${W - padR}" y1="${y(hi)}" y2="${y(hi)}" stroke="#1d3b4f"/><line x1="${padL}" x2="${W - padR}" y1="${y(lo)}" y2="${y(lo)}" stroke="#1d3b4f"/>` +
+    `<text x="${padL - 6}" y="${y(hi) + 4}" fill="#6b8a9a" font-size="11" text-anchor="end">${hi.toFixed(2)}</text>` +
+    `<text x="${padL - 6}" y="${y(lo) + 4}" fill="#6b8a9a" font-size="11" text-anchor="end">${lo.toFixed(2)}</text>` +
+    `<text x="${padL}" y="${H - 3}" fill="#6b8a9a" font-size="11">60 s ago</text><text x="${W - padR}" y="${H - 3}" fill="#6b8a9a" font-size="11" text-anchor="end">now</text>` +
+    `<path d="${d}" fill="none" stroke="#3ad6c5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+    `<g id="hov"></g>`;
+  if (hoverX != null) drawHover();
+}
+let hoverX = null;
+function drawHover() {
+  const svg = $('chart'), sc = svg._scale, g = svg.querySelector('#hov'), tip = $('tip');
+  if (!sc || !g || hoverX == null || !hist.length) { tip.style.display = 'none'; return; }
+  let best = hist[0]; for (const p of hist) if (Math.abs(sc.x(p.t) - hoverX) < Math.abs(sc.x(best.t) - hoverX)) best = p;
+  const px = sc.x(best.t), py = sc.y(best.v);
+  g.innerHTML = `<line x1="${px}" x2="${px}" y1="${sc.padT}" y2="${sc.H - sc.padB}" stroke="#6b8a9a" stroke-dasharray="3 3"/><circle cx="${px}" cy="${py}" r="4.5" fill="#3ad6c5" stroke="#0c2130" stroke-width="2"/>`;
+  tip.textContent = `${best.v.toFixed(3)} V · ${((Date.now() - best.t) / 1000).toFixed(0)} s ago`;
+  tip.style.display = 'block'; tip.style.left = Math.min(px + 10, sc.W - 150) + 'px'; tip.style.top = Math.max(0, py - 30) + 'px';
+}
+$('chart').addEventListener('mousemove', e => { const r = e.currentTarget.getBoundingClientRect(); hoverX = (e.clientX - r.left) * ($('chart')._scale?.W || r.width) / r.width; drawHover(); });
+$('chart').addEventListener('mouseleave', () => { hoverX = null; $('tip').style.display = 'none'; const g = $('chart').querySelector('#hov'); if (g) g.innerHTML = ''; });
+
+// ---- Canvases ----
+function fit(c) { const r = c.getBoundingClientRect(), d = devicePixelRatio || 1; if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return [g, r.width, r.height]; }
+
+function drawSea(now) {
+  const [g, W, H] = fit($('sea')), dt = Math.min(0.1, (now - anim.t) / 1000); anim.t = now;
+  const fresh = S && S.motors && now - lastMsg < 1500, tl = fresh ? S.motors.left : 0, tr = fresh ? S.motors.right : 0;
+  anim.l += (tl - anim.l) * Math.min(1, dt * 8); anim.r += (tr - anim.r) * Math.min(1, dt * 8);
+  const fwd = (anim.l + anim.r) / 2, turn = (anim.l - anim.r) / 2;
+  anim.scroll += (0.15 + fwd * 1.6) * 90 * dt; anim.aL += anim.l * 28 * dt; anim.aR += anim.r * 28 * dt;
+  const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0a3550'); bg.addColorStop(1, '#062233');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = 'rgba(120,200,230,.16)'; g.lineWidth = 2; g.lineCap = 'round';
+  for (let i = 0; i < 26; i++) {
+    const wx = (i * 137.5) % W, wy = ((i * 71 + anim.scroll) % (H + 40) + H + 40) % (H + 40) - 20, len = 18 + (i % 4) * 9;
+    g.beginPath(); g.moveTo(wx, wy); g.quadraticCurveTo(wx + len / 2, wy - 5, wx + len, wy); g.stroke();
+  }
+  const cx = W / 2 + turn * W * 0.24, cy = H / 2 + 6 - fwd * 34, sc = Math.min(1.25, H / 330);
+  g.save(); g.translate(cx, cy); g.rotate(turn * 0.5); g.scale(sc, sc);
+  for (const [fx, v] of [[-22, anim.l], [22, anim.r]]) {           // wake behind each fan
+    const a = Math.abs(v); if (a < 0.03) continue;
+    const dir = v > 0 ? 1 : -1, y0 = v > 0 ? 78 : 40, grd = g.createLinearGradient(0, y0, 0, y0 + dir * (40 + a * 90));
+    grd.addColorStop(0, `rgba(200,240,255,${0.15 + a * 0.4})`); grd.addColorStop(1, 'rgba(200,240,255,0)');
+    g.fillStyle = grd; g.beginPath(); g.moveTo(fx - 10, y0); g.lineTo(fx + 10, y0); g.lineTo(fx + 18 + a * 10, y0 + dir * (40 + a * 90)); g.lineTo(fx - 18 - a * 10, y0 + dir * (40 + a * 90)); g.fill();
+  }
+  const pressed = fresh && S.joystick && S.joystick.button === 'PRESSED';
+  g.fillStyle = fresh ? '#e9f1f4' : '#6f8792'; g.strokeStyle = '#0a1a26'; g.lineWidth = 2;      // hull
+  g.beginPath(); g.moveTo(0, -92); g.bezierCurveTo(34, -60, 40, -10, 38, 62); g.lineTo(-38, 62); g.bezierCurveTo(-40, -10, -34, -60, 0, -92); g.fill(); g.stroke();
+  g.fillStyle = pressed ? '#fbbf24' : fresh ? '#3ad6c5' : '#48606b';                               // deck
+  g.beginPath(); g.moveTo(0, -62); g.bezierCurveTo(20, -42, 24, -8, 23, 30); g.lineTo(-23, 30); g.bezierCurveTo(-24, -8, -20, -42, 0, -62); g.fill();
+  g.fillStyle = '#0c2130'; g.beginPath(); g.roundRect(-10, -22, 20, 26, 5); g.fill();              // electronics bay
+  for (const [fx, ang, v] of [[-22, anim.aL, anim.l], [22, anim.aR, anim.r]]) {                    // fans
+    g.fillStyle = '#0a1a26'; g.beginPath(); g.arc(fx, 58, 17, 0, 7); g.fill();
+    g.strokeStyle = fresh ? '#9fbccb' : '#48606b'; g.lineWidth = 2; g.beginPath(); g.arc(fx, 58, 17, 0, 7); g.stroke();
+    g.save(); g.translate(fx, 58); g.rotate(ang); g.strokeStyle = Math.abs(v) > 0.03 ? '#e8f4f8' : '#6b8a9a'; g.lineWidth = 4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-13, 0); g.lineTo(13, 0); g.moveTo(0, -13); g.lineTo(0, 13); g.stroke(); g.restore();
+  }
+  g.restore();
+  g.font = '12px -apple-system, sans-serif'; g.fillStyle = 'rgba(232,244,248,.6)';
+  g.fillText('Animation follows the joystick. It is not measured boat motion.', 12, H - 12);
+  if (!fresh) { g.font = '600 15px -apple-system, sans-serif'; g.fillStyle = '#fbbf24'; g.textAlign = 'center'; g.fillText('No joystick input', W / 2, 28); g.textAlign = 'left'; }
+  if (pressed) { g.font = '700 16px -apple-system, sans-serif'; g.fillStyle = '#fbbf24'; g.fillText('BUTTON PRESSED', 12, 26); }
+}
+
+function drawPad() {
+  const [g, W, H] = fit($('pad')); g.clearRect(0, 0, W, H);
+  g.fillStyle = '#0a1a26'; g.beginPath(); g.roundRect(0, 0, W, H, 14); g.fill();
+  g.strokeStyle = '#1d3b4f'; g.lineWidth = 1; g.beginPath(); g.moveTo(W / 2, 10); g.lineTo(W / 2, H - 10); g.moveTo(10, H / 2); g.lineTo(W - 10, H / 2); g.stroke();
+  g.beginPath(); g.arc(W / 2, H / 2, W / 2 - 14, 0, 7); g.stroke();
+  g.fillStyle = '#6b8a9a'; g.font = '10px -apple-system, sans-serif'; g.textAlign = 'center'; g.fillText('FWD', W / 2, 12); g.fillText('BACK = STOP', W / 2, H - 4);
+  const j = S && S.joystick && performance.now() - lastMsg < 1500 ? S.joystick : null;
+  const nx = j ? (j.x - S.centers.x) / (j.x >= S.centers.x ? 4095 - S.centers.x : S.centers.x) : 0;
+  const ny = j ? (j.y - S.centers.y) / (j.y >= S.centers.y ? 4095 - S.centers.y : S.centers.y) : 0;
+  const R = W / 2 - 22, px = W / 2 + nx * R, py = H / 2 + ny * R;
+  g.strokeStyle = j ? '#3ad6c5' : '#48606b'; g.lineWidth = 3; g.beginPath(); g.moveTo(W / 2, H / 2); g.lineTo(px, py); g.stroke();
+  g.fillStyle = j ? (j.button === 'PRESSED' ? '#fbbf24' : '#3ad6c5') : '#48606b'; g.beginPath(); g.arc(px, py, 11, 0, 7); g.fill();
+}
+
+function frame(now) {
+  drawSea(now); drawPad();
+  if (S && now - lastMsg > 1500) { pill($('pCtl'), 'page lost bridge', 'bad'); pill($('pBoat'), 'page lost bridge', 'bad'); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---- Talk-back (browser speech synthesis; reads real page state, sends nothing to the boat) ----
+function say(text) { $('said').textContent = '“' + text + '”'; if ('speechSynthesis' in window) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(text)); } }
+function statusSentence() {
+  if (!S) return 'I have no data yet.';
+  const p = [S.demo ? 'This is a simulation.' : 'Poseidon here.'];
+  const ls = S.link.state;
+  p.push(ls === 'LINK OK' ? 'Radio link is good.' : ls === 'LINK LOST' ? 'Radio link is lost.' : 'I have no radio report from the boat.');
+  if (S.motors) {
+    const f = (S.motors.left + S.motors.right) / 2, t = (S.motors.left - S.motors.right) / 2;
+    const dir = [f < 0.1 ? '' : 'forward', Math.abs(t) < 0.1 ? '' : t > 0 ? 'right' : 'left'].filter(Boolean).join(' and ');
+    p.push(dir ? `The joystick is asking for ${dir}.` : 'The joystick is centered.');
+  } else p.push('No joystick input.');
+  p.push(S.turb && S.turb.sensorV != null ? `Turbidity sensor reads ${S.turb.sensorV.toFixed(2)} volts. It is not calibrated yet.` : 'I have no turbidity reading.');
+  if (S.motorsDisabled) p.push('Motors are disabled.');
+  return p.join(' ');
+}
+$('speak').onclick = () => say(statusSentence());
+
+const es = new EventSource('/events');
+es.onmessage = e => update(JSON.parse(e.data));
+</script>
+</body>
+</html>

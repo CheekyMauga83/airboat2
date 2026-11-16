@@ -2,6 +2,11 @@
 
 ## Current working setup — November 16, 2026
 
+> **Latest update: 2026-11-16, 17:50 EST.** The boards now run
+> `boat_l298_joystick_telemetry` (25% cap) and `controller_link_telemetry`, and
+> there is a web dashboard (`python3 tools/poseidon_web.py`). See the dated UPDATE
+> block at the top of [CURRENT_SETUP.md](CURRENT_SETUP.md).
+
 **Start with [CURRENT_SETUP.md](CURRENT_SETUP.md).** The boat now uses an L298N,
 not the older DRV8871 wiring described below. Current boat sketch:
 `firmware/boat_l298_joystick/boat_l298_joystick.ino` (50% cap).
