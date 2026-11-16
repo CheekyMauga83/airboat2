@@ -1,5 +1,14 @@
 # Airboat
 
+## Current working setup — November 16, 2026
+
+**Start with [CURRENT_SETUP.md](CURRENT_SETUP.md).** The boat now uses an L298N,
+not the older DRV8871 wiring described below. Current boat sketch:
+`firmware/boat_l298_joystick/boat_l298_joystick.ino` (50% cap).
+Controller sketch: `firmware/controller_link_test/controller_link_test.ino`.
+The remaining sections retain earlier development history; do not use their
+DRV8871 pin map for the installed L298N.
+
 Two ESP32-S3 N16R8 boards are planned for a joystick controller and a
 turbidity-sensing airboat. Start by testing the controller over USB.
 
