@@ -88,16 +88,13 @@ class Bridge:
             js_src, js = 'boat RX', boat.data
         else:
             js_src, js = None, None
-        if boat_ok:
-            m_src, m = 'boat RX', boat.data
-        elif ctl.fresh(ctl.last, now):
-            m_src, m = 'controller TX', ctl.data
-        else:
-            m_src, m = None, None
+        drive_feed = next((f for f in (ctl, boat) if f.fresh(f.drive_at, now)), None)
         motors = None
-        if m:
-            left, right = forward_only_motors(m['x'], m['y'], args.center_x, args.center_y, args.deadzone)
-            motors = {'left': round(left, 3), 'right': round(right, 3), 'source': m_src}
+        armed = None
+        if drive_feed:
+            left, right, armed = drive_feed.drive
+            motors = {'left': left / 256, 'right': right / 256,
+                      'source': 'boat-reported PWM duty'}
         turb = None
         tfeed, tvia = turbidity_feed(ctl, boat, now)
         if tfeed:
@@ -105,6 +102,8 @@ class Bridge:
             turb = {'adc': adc, 'mv': mv, 'n': self.turb_count[tfeed.name], 'via': tvia,
                     'sensorV': round(mv / 1000 * DIVIDER_GAIN, 3) if mv is not None else None}
         link = boat.state if boat.state and boat.fresh(boat.state_at, now) else None
+        if link is None and ctl.fresh(ctl.turb_at, now):
+            link = 'TELEMETRY LIVE'
         return {
             'demo': bool(self.demo),
             'ctl': self.feed_info(ctl, now),
@@ -113,7 +112,8 @@ class Bridge:
             'centers': {'x': args.center_x, 'y': args.center_y},
             'motors': motors,
             'railV': args.motor_voltage,
-            'motorsDisabled': boat.fresh(boat.motors_disabled_at, now),
+            'armed': armed,
+            'motorsDisabled': armed is False or boat.fresh(boat.motors_disabled_at, now),
             'link': {'state': link, 'ctlSeq': ctl.data.get('seq'), 'boatSeq': boat.data.get('seq'),
                      'ack': ctl.data.get('MAC_ACK'), 'fail': ctl.data.get('FAIL')},
             'turb': turb,
@@ -163,7 +163,7 @@ def main():
     parser.add_argument('--boat-port', help=f'Override auto-detect (USB serial {BOAT_SERIAL})')
     parser.add_argument('--no-controller', action='store_true')
     parser.add_argument('--no-boat', action='store_true')
-    parser.add_argument('--motor-voltage', type=float, default=7.0, help='Assumed motor rail; NOT measured')
+    parser.add_argument('--motor-voltage', type=float, default=6.0, help='Assumed motor rail; NOT measured')
     parser.add_argument('--center-x', type=int, default=1915)
     parser.add_argument('--center-y', type=int, default=1925)
     parser.add_argument('--deadzone', type=float, default=0.05)
@@ -173,9 +173,9 @@ def main():
 
     bridge = Bridge(args)
     worker = threading.Thread(target=bridge.run, daemon=True)
-    worker.start()
     server = ThreadingHTTPServer(('127.0.0.1', args.port), make_handler(bridge))
     server.daemon_threads = True
+    worker.start()
     mode = 'SIMULATED data' if args.demo else 'live boards (read-only)'
     print(f'Poseidon web: http://127.0.0.1:{args.port}  [{mode}]  Ctrl+C to stop', flush=True)
     try:

@@ -173,22 +173,22 @@ function update(s) {
   $('demoBanner').style.display = s.demo ? 'block' : 'none';
   feedPill($('pCtl'), s.ctl); feedPill($('pBoat'), s.boat);
   const ls = s.link.state;
-  pill($('pLink'), ls === 'LINK OK' ? 'link OK' : ls === 'LINK LOST' ? 'link lost' : ls === 'WAITING' ? 'waiting for controller' : 'unknown',
-       ls === 'LINK OK' ? 'good' : ls === 'LINK LOST' ? 'bad' : 'warn');
+  pill($('pLink'), ls === 'TELEMETRY LIVE' ? 'boat telemetry live' : ls === 'LINK OK' ? 'link OK' : ls === 'LINK LOST' ? 'link lost' : ls === 'WAITING' ? 'waiting for controller' : 'unknown',
+       (ls === 'LINK OK' || ls === 'TELEMETRY LIVE') ? 'good' : ls === 'LINK LOST' ? 'bad' : 'warn');
 
   // Motors
   const m = s.motors;
-  $('srcTag').textContent = m ? 'from ' + m.source : 'no joystick input';
+  $('srcTag').textContent = m ? 'from ' + m.source : 'waiting for boat duty report';
   for (const [k, bar, val] of [['left', 'bL', 'vL'], ['right', 'bR', 'vR']]) {
     if (m) {
       const v = m[k];
       $(bar).style.left = '0'; $(bar).style.width = (v * 100) + '%';
-      $(val).textContent = `${pct(v)} · ${(v * s.railV).toFixed(1)} V est`;
+      $(val).textContent = `${pct(v)} duty`;
     } else { $(bar).style.width = '0'; $(val).textContent = '--'; }
   }
-  $('motorNote').textContent = 'Fan power is an estimate from the joystick position, not a measurement. No reverse: pulling back stops the fans. ' +
-    (s.motorsDisabled ? 'The boat reports its motors are DISABLED.' : 'Boat motor state: unknown.') +
-    ` Volts assume a ${s.railV} V supply.`;
+  $('motorNote').textContent = 'Duty is the PWM command reported by the boat, not measured speed or voltage. Motor voltage requires a multimeter. ' +
+    (s.armed === true ? 'Boat is ARMED.' : s.armed === false ? 'Boat is DISARMED.' : 'Waiting for a fresh boat state report.');
+
 
   // Turbidity
   const t = s.turb;
@@ -214,7 +214,7 @@ function update(s) {
   $('lState').textContent = ls || 'no boat report'; $('lState').style.color = ls === 'LINK OK' ? 'var(--good)' : ls === 'LINK LOST' ? 'var(--bad)' : 'var(--warn)';
   $('lSeq').textContent = `ctl ${L.ctlSeq ?? '--'} · boat ${L.boatSeq ?? '--'}`;
   $('lAck').textContent = L.ack != null && L.fail != null && L.ack + L.fail ? `${(100 * L.ack / (L.ack + L.fail)).toFixed(1)}% (${L.fail} failed)` : '--';
-  $('lMot').textContent = s.motorsDisabled ? 'DISABLED (boat report)' : 'unknown';
+  $('lMot').textContent = s.armed === true ? 'ARMED (boat report)' : s.armed === false ? 'DISARMED (boat report)' : 'awaiting boat telemetry';
 
   $('log').innerHTML = s.log.slice(-9).map(l => `<div><em class="${l.src === 'CTL' ? 'c' : ''}">${l.src}</em>${l.text.replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;')}</div>`).join('');
 
@@ -324,12 +324,8 @@ function statusSentence() {
   if (!S) return 'I have no data yet.';
   const p = [S.demo ? 'This is a simulation.' : 'Poseidon here.'];
   const ls = S.link.state;
-  p.push(ls === 'LINK OK' ? 'Radio link is good.' : ls === 'LINK LOST' ? 'Radio link is lost.' : 'I have no radio report from the boat.');
-  if (S.motors) {
-    const f = (S.motors.left + S.motors.right) / 2, t = (S.motors.left - S.motors.right) / 2;
-    const dir = [f < 0.1 ? '' : 'forward', Math.abs(t) < 0.1 ? '' : t > 0 ? 'right' : 'left'].filter(Boolean).join(' and ');
-    p.push(dir ? `The joystick is asking for ${dir}.` : 'The joystick is centered.');
-  } else p.push('No joystick input.');
+  p.push(ls === 'TELEMETRY LIVE' ? 'Boat telemetry is arriving through the controller.' : ls === 'LINK OK' ? 'Radio link is good.' : ls === 'LINK LOST' ? 'Radio link is lost.' : 'I have no radio report from the boat.');
+  p.push(S.joystick ? `Joystick input is live. X ${S.joystick.x}, Y ${S.joystick.y}.` : 'No fresh joystick input. Connect the controller USB to this computer.');
   p.push(S.turb && S.turb.sensorV != null ? `Turbidity sensor reads ${S.turb.sensorV.toFixed(2)} volts. It is not calibrated yet.` : 'I have no turbidity reading.');
   if (S.motorsDisabled) p.push('Motors are disabled.');
   return p.join(' ');

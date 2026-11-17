@@ -59,6 +59,8 @@ class Feed:
         self.motors_disabled_at = None
         self.turb = None
         self.turb_at = None
+        self.drive = None
+        self.drive_at = None
         self.turb_hist = deque(maxlen=24)  # sensor volts, for the trend line
 
     def find_port(self):
@@ -119,9 +121,16 @@ class Feed:
             self.state, self.state_at = 'WAITING', now
         if 'MOTORS DISABLED' in line:
             self.motors_disabled_at = now
-        turb = TURB_RE.search(line)
+        drive = re.search(r'left=(\d+) right=(\d+)', line)
+        if drive:
+            armed = re.search(r'armed=([01])', line)
+            if armed or line.startswith('L298 DRIVE'):
+                self.drive = (int(drive[1]), int(drive[2]),
+                              bool(int(armed[1])) if armed else '| ARMED |' in line)
+                self.drive_at = now
+        turb = TURB_RE.search(line) or re.search(r'TURBIDITY.*?raw=(\d+).*?adc_mV=([\d.]+)', line)
         if turb:
-            self.turb = (int(turb[1]), int(turb[2]) if turb[2] else None)
+            self.turb = (int(turb[1]), round(float(turb[2])) if turb[2] else None)
             self.turb_at = now
             if self.turb[1] is not None:
                 self.turb_hist.append(self.turb[1] / 1000 * DIVIDER_GAIN)

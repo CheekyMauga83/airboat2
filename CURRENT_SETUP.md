@@ -134,3 +134,20 @@ notes are retained for history, not the current L298 wiring or upload target.
 Verify joystick direction and failsafe operation on installed L298 setup,
 propeller direction, loaded motor current/temperature, supply stability, and
 repeatable turbidity response. No calibrated NTU or drinking-water claims.
+
+## POSEIDON controller display and website (2026-11-17)
+Controller sketch: firmware/controller_screen_telemetry/controller_screen_telemetry.ino.
+ST7735 screen: SCK=12, SDA/MOSI=11, A0/DC=9, RESET=8, CS=10;
+VCC and LED=3V3, GND common. Uses Adafruit ST7735/ST7789 and GFX libraries.
+Rotation 3 keeps the requested upside-down landscape orientation.
+Title is POSEIDON. Sensor volts are GPIO4 millivolts multiplied by the 1.5 divider correction.
+Duty is boat-reported PWM ticks / 256, not measured motor voltage.
+NTU remains uncalibrated until a validated calibration is available.
+
+Start the read-only website:
+    python3 tools/poseidon_web.py
+Then open http://127.0.0.1:8765/.
+Keep the controller connected to this computer by USB and power the boat normally.
+The boat can relay sensor, duty and armed state through the controller without boat USB.
+Close other serial monitors before starting. Missing or stale telemetry remains unknown;
+the page never substitutes simulated readings in live mode.
