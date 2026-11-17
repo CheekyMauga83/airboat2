@@ -1,5 +1,17 @@
 # Current setup — 2026-11-16
 
+## Latest source update: 50% maximum
+
+The owner requested a 50% maximum. `boat_l298_joystick_telemetry` now uses
+`kMaxDuty = 128` out of 256 PWM counts. The 3-second run limit, 150 ms
+link-loss stop, arming behavior, and wireless telemetry are unchanged.
+This update is compiled but NOT uploaded to the boat in this session. The
+25% flashed state recorded below remains the last reported hardware state.
+Dashboard fan bars remain joystick estimates, not measured motor output.
+
+The following blocks are historical records; this source update supersedes
+their statements about the current source cap.
+
 > ## UPDATE — 2026-11-16, 17:50 EST (evening session, Felipe + Claude Code)
 >
 > **This block is newer than everything below it.** Where they disagree, this wins.
