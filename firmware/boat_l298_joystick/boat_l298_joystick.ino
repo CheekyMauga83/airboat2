@@ -22,9 +22,10 @@ constexpr uint32_t kPwmFrequency = 1000; // Matches L298 bench tests.
 constexpr uint8_t kPwmBits = 8;
 constexpr uint32_t kPwmPeriodTicks = 1U << kPwmBits;
 constexpr uint8_t kMaxDuty = 128;  // 50% drive duty. ENA/ENB jumpers installed.
-constexpr int kCenterX = 1915;
-constexpr int kCenterY = 1925;
-constexpr int kDeadzone = 300;
+constexpr int kCenterX = 1750;
+constexpr int kCenterY = 1750;
+constexpr int kDeadzone = 250; // Inclusive neutral range: 1500..2000.
+constexpr int kAxisMaximum = 3000; // Saturate high-side demand at this reading.
 constexpr uint8_t kTurbidityPin = 4;
 
 void sampleTurbidity() {
@@ -124,7 +125,7 @@ void onReceive(const esp_now_recv_info_t *info, const uint8_t *data, int length)
 float axisDemand(int raw, int center) {
   const int offset = raw - center;
   if (abs(offset) <= kDeadzone) return 0.0f;
-  if (offset > 0) return float(offset - kDeadzone) / (4095 - center - kDeadzone);
+  if (offset > 0) return min(1.0f, float(offset - kDeadzone) / (kAxisMaximum - center - kDeadzone));
   return float(offset + kDeadzone) / (center - kDeadzone);
 }
 

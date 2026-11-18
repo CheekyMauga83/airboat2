@@ -151,3 +151,11 @@ Keep the controller connected to this computer by USB and power the boat normall
 The boat can relay sensor, duty and armed state through the controller without boat USB.
 Close other serial monitors before starting. Missing or stale telemetry remains unknown;
 the page never substitutes simulated readings in live mode.
+
+## Boat joystick calibration
+Both L298 boat sketches now use an inclusive 1500–2000 neutral band.
+High-side readings reach full demand at 3000 and remain saturated above that.
+Low-side readings ramp from zero demand at 1500 to full demand at 0.
+Existing directions remain unchanged: low Y is forward; high Y stops forward thrust.
+The 50% duty cap, click-to-arm, link-loss stop and three-second run limit remain.
+Uploaded to boat ESP32 44:1B:F6:FE:71:A8 on 2026-11-17; flash verified.
